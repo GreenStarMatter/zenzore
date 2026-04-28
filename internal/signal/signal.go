@@ -1,4 +1,4 @@
-package main
+package signal
 
 const BAD_SAMPLE = Sample(-9999)
 
