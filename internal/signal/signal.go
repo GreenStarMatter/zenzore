@@ -10,6 +10,13 @@ type Signal struct {
 	RandomValue   int
 }
 
+type Device struct {
+	SN        string `json:"SN"`
+	PN        string `json:"PN"`
+	Reading_1 int    `json:"Reading_1"`
+	Reading_2 int    `json:"Reading_2"`
+}
+
 func GenerateConstantSignal(expected int) Sample {
 	return Sample(expected)
 }
