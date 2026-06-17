@@ -4,12 +4,10 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	msg "github.com/GreenStarMatter/zenzore/internal/message"
 	"github.com/GreenStarMatter/zenzore/internal/signal"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 // sampleCmd represents the sample command
@@ -33,19 +31,17 @@ var sampleCmd = &cobra.Command{
 			return err
 		}
 		fmt.Printf("rand val of %d\n", rand)
-		sig := &signal.Signal{Type: typ, ExpectedValue: exp, RandomValue: rand}
-		sample := signal.GenerateSignalSample(sig)
-		fmt.Printf("Returned sample of: %d\n", sample)
-		dev := &signal.Device{SN: "testSN", PN: "testPN", Reading_1: int(sample), Reading_2: int(sample) + 1}
-		jsonData, err := json.Marshal(dev)
-		if err != nil {
-			log.Fatal(err)
-		}
+
+		sig := signal.NewSignal(typ, exp, rand)
+		sensor := signal.NewSensor("testSensorSN", "testSensorPN", sig)
+		device := signal.NewDevice("testDeviceSN", "testDevicePN")
+		device.AddSensor(sensor)
+		sig.GenerateSignalSample()
+		jsonData := device.ExportDeviceData()
 		message := msg.New()
 		message.CreatePubSubClient()
 		defer message.Client.Close()
-		//message.FormatMessage()
-		message.Message = jsonData
+		message.AcceptGenericJson(jsonData)
 		message.SendMessageToPubSub()
 		return nil
 	},

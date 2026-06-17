@@ -67,6 +67,10 @@ func (psm *PubSubMessage) SendMessageToPubSub() {
 	fmt.Printf("Sent Message: %s\n", id)
 }
 
+func (psm *PubSubMessage) AcceptGenericJson(incomingJson []byte) {
+	psm.Message = incomingJson
+}
+
 func New() *PubSubMessage {
 	ctx := context.Background()
 	return &PubSubMessage{Ctx: ctx}
