@@ -36,12 +36,11 @@ func New() (*Navigator, *NavigatorNode) {
 }
 
 func (parent *NavigatorNode) Add() (*NavigatorNode, error) {
-	//TODO: make an iota for Level to easily do this
 	if parent.Level == Sensor {
 		return nil, fmt.Errorf("canot add child node to sensor")
 	}
 	childLevel := parent.Level + 1
-	NewNode := &NavigatorNode{ID: "0", Level: childLevel, Parent: nil, Children: make([]*NavigatorNode, 0)}
+	NewNode := &NavigatorNode{ID: "0", Level: childLevel, Parent: parent, Children: make([]*NavigatorNode, 0)}
 	parent.Children = append(parent.Children, NewNode)
 	return NewNode, nil
 }
@@ -77,11 +76,25 @@ func (nav *Navigator) Set(chosenNode *NavigatorNode) {
 }
 
 func (nav *Navigator) Up() error {
-	return fmt.Errorf("failed to move navigator")
+	if nav.CurrentNode.Level == Root {
+		return fmt.Errorf("already at root, nowhere up to go")
+	}
+	nav.CurrentNode = nav.CurrentNode.Parent
+	return nil
 }
 
-func (nav *Navigator) Down(id ID) error {
-	return fmt.Errorf("failed to move navigator")
+func (nav *Navigator) Down(child *NavigatorNode) error {
+	if nav.CurrentNode.Level == Sensor {
+		return fmt.Errorf("at lowest level cannot go down further")
+	}
+	for _, c := range nav.CurrentNode.Children {
+		if c == child {
+			nav.CurrentNode = child
+			return nil
+		}
+	}
+	return fmt.Errorf("node %q is not a child of current node %q", child.ID, nav.CurrentNode.ID)
+
 }
 
 //Create functionality to read folder where systems should be (decide file format)

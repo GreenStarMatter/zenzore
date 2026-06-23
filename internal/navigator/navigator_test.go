@@ -53,12 +53,12 @@ func TestNavigation(t *testing.T) {
 
 	assert.Error(t, navigator.Up())
 
-	assert.Error(t, navigator.Down(sensorNode.ID))
-	assert.NoError(t, navigator.Down(systemNode.ID))
+	assert.Error(t, navigator.Down(sensorNode))
+	assert.NoError(t, navigator.Down(systemNode))
 
-	navigator.Down(deviceNode.ID)
-	navigator.Down(sensorNode.ID)
-	assert.Error(t, navigator.Down(sensorNode.ID))
+	navigator.Down(deviceNode)
+	navigator.Down(sensorNode)
+	assert.Error(t, navigator.Down(sensorNode))
 
 	navigator.Up()
 	navigator.Up()
