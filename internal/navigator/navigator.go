@@ -2,10 +2,17 @@ package navigator
 
 import "fmt"
 
-type Level string
+type Level int
 type ID string
 
 //Levels: Root, System, Device, Sensor
+
+const (
+	Root = iota
+	Zyztem
+	Device
+	Sensor
+)
 
 type NavigatorNode struct {
 	ID       ID //need to determine ID
@@ -19,21 +26,35 @@ type Navigator struct {
 }
 
 func New() (*Navigator, *NavigatorNode) {
-	rootNode := &NavigatorNode{ID: "0", Level: "root", Parent: nil, Children: make([]*NavigatorNode, 0)}
+	rootNode := &NavigatorNode{ID: "0", Level: Root, Parent: nil, Children: make([]*NavigatorNode, 0)}
 	navigator := &Navigator{CurrentNode: rootNode}
 	return navigator, rootNode
 
 }
 
-func (parent *NavigatorNode) Add() *NavigatorNode {
+func (parent *NavigatorNode) Add() (*NavigatorNode, error) {
 	//TODO: make an iota for Level to easily do this
-	NewNode := &NavigatorNode{ID: "0", Level: "root", Parent: nil, Children: make([]*NavigatorNode, 0)}
+	if parent.Level == Sensor {
+		return nil, fmt.Errorf("canot add child node to sensor")
+	}
+	childLevel := parent.Level + 1
+	NewNode := &NavigatorNode{ID: "0", Level: childLevel, Parent: nil, Children: make([]*NavigatorNode, 0)}
 	parent.Children = append(parent.Children, NewNode)
-	return NewNode
+	return NewNode, nil
 }
 
 func (parent *NavigatorNode) Remove(child *NavigatorNode) error {
-	return fmt.Errorf("failed to remove child node")
+	//remove child
+	//remove child from parent list
+	//find match index in parent.Children and pop
+
+	for i, c := range parent.Children {
+		if c == child {
+			parent.Children = append(parent.Children[:i], parent.Children[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("child node %q not found under parent %q", child.ID, parent.ID)
 }
 
 func (parent *NavigatorNode) List() string {

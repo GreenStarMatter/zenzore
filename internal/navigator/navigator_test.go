@@ -7,13 +7,18 @@ import (
 
 func TestAddRemoveNode(t *testing.T) {
 	_, rootNode := New()
-	systemNode := rootNode.Add()
-	deviceNode := systemNode.Add()
-	sensorNode := deviceNode.Add()
-	sensorNode2 := deviceNode.Add()
+	systemNode, err := rootNode.Add()
+	assert.NoError(t, err)
+	deviceNode, err := systemNode.Add()
+	assert.NoError(t, err)
+	sensorNode, err := deviceNode.Add()
+	assert.NoError(t, err)
+	sensorNode2, err := deviceNode.Add()
+	assert.NoError(t, err)
 
 	assert.Equal(t, 2, len(deviceNode.Children))
-	deviceNode.Remove(sensorNode)
+	err = deviceNode.Remove(sensorNode)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(deviceNode.Children))
 	assert.Equal(t, sensorNode2, deviceNode.Children[0])
 
@@ -38,12 +43,12 @@ func TestNavigation(t *testing.T) {
 	/*attempt to navigate between different levels from system to sensor*/
 	navigator, rootNode := New()
 	navigator.Set(rootNode)
-	systemNode := rootNode.Add()
-	_ = rootNode.Add()
-	deviceNode := systemNode.Add()
-	_ = systemNode.Add()
-	sensorNode := deviceNode.Add()
-	_ = deviceNode.Add()
+	systemNode, _ := rootNode.Add()
+	_, _ = rootNode.Add()
+	deviceNode, _ := systemNode.Add()
+	_, _ = systemNode.Add()
+	sensorNode, _ := deviceNode.Add()
+	_, _ = deviceNode.Add()
 
 	assert.Error(t, navigator.Up())
 
