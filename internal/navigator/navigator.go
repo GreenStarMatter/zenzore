@@ -1,6 +1,9 @@
 package navigator
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Level int
 type ID string
@@ -58,7 +61,15 @@ func (parent *NavigatorNode) Remove(child *NavigatorNode) error {
 }
 
 func (parent *NavigatorNode) List() string {
-	return "failed to Listchild node"
+	if len(parent.Children) == 0 {
+		return "(no children)"
+	}
+	var sb strings.Builder
+	for i, c := range parent.Children {
+		fmt.Fprintf(&sb, "%d: %s\n", i, c.ID)
+	}
+	return sb.String()
+
 }
 
 func (nav *Navigator) Set(chosenNode *NavigatorNode) {

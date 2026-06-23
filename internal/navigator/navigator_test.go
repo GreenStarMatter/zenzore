@@ -30,13 +30,14 @@ func TestListSystems(t *testing.T) {
 	/*attempt to list all items in the navigation
 	test all items are stored in correct data structure
 	test string print is correct*/
-	_, rootNode := New()
-	//for i := 0; i < 5; i++ {
-	//	_ = rootNode.Add()
-	//}
 
-	assert.Equal(t, "always fail", rootNode.List())
-	//TODO: add sprint to match system list
+	expectedString := "0: 0\n1: 0\n2: 0\n3: 0\n4: 0\n"
+	_, rootNode := New()
+	for range 5 {
+		_, _ = rootNode.Add()
+	}
+
+	assert.Equal(t, expectedString, rootNode.List())
 }
 
 func TestNavigation(t *testing.T) {
