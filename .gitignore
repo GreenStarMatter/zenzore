@@ -1,0 +1,66 @@
+# Binaries and build output
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go specific
+vendor/
+go.sum.bak
+*.cover
+coverage.txt
+coverage.html
+*.prof
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Cobra/CLI generated config or cache (adjust if your CLI writes local state)
+.cobra.yaml
+*.local.yaml
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+
+# GCP service account keys / credentials
+*-key.json
+*-credentials.json
+service-account*.json
+gcloud-key.json
+*.gcp.json
+.gcloud/
+
+# Terraform (common alongside GCP infra)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Air / live reload (common in Go dev)
+tmp/
+.air.toml.bak

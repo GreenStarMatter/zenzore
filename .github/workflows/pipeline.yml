@@ -1,0 +1,63 @@
+name: CI Checks
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: ^1.18
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      - name: Downloads
+        run: go get -t ./...
+      - name: Run Test
+        run: make test
+      - name: Coverage Check
+        run: make coverage
+      - name: Generage Report
+        run: make report
+      - name: Copy Files
+        run: |
+              mkdir reports
+              cp cover.html reports/.
+      - name: Archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports
+
+  build:
+    name: Build App
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: ^1.18
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: make build
+
+      - name: Copy Files
+        run: |
+             mkdir artifacts
+             cp zenzore artifacts/.
+
+      - name: Archive
+        uses: actions/upload-artifact@v4
+        with:
+              name: zenzore
+              path: artifacts
