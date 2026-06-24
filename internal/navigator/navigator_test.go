@@ -1,9 +1,10 @@
 package navigator
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -69,39 +70,20 @@ func TestNavigation(t *testing.T) {
 
 }
 
-func TestFileFindInOperatingEnvironment(t *testing.T) {
-	//attempt to find files in srv path (do happy and unhappy path)
-	//Place a file manually
-
-	//TODO: Make test which finds files in server location (Should be in PWD or Stored in environment variable to point at data location)
-	//verify folder location exists
-	//verify folder empty when starts (terminate test if not empty because this means that the system is already operating)
-	//Add dummy files with mocked PID
-	//Read all dummy files and instance navigator
-	//Verify navigator structure
-	//verify PID read in from each file
-
-	//Create a rootNode (this logic should implicitly locate or create a /srv dir)
-	//fileNameArray := os.ListFiles("./srv") != 0 then fail and stop test
-	//write 5 files with names 1..5
-
-	//iterate through fileNameArray and add a NavigatorNode for each PID
-	//assert that the rootNode has 5 children
-	//iterate through Children and assert that each ID is in 1..5 and none repeat
-	dir := t.TempDir() // fresh, guaranteed-empty dir; auto-cleaned after test
-
-	entries, err := os.ReadDir(dir)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(entries), "expected fresh dir to start empty")
-
+func TestLoadFromServer(t *testing.T) {
 	expectedIDs := []string{"1", "2", "3", "4", "5"}
-	for _, name := range expectedIDs {
-		f, err := os.Create(filepath.Join(dir, name))
-		assert.NoError(t, err)
-		assert.NoError(t, f.Close())
-	}
 
-	_, rootNode, err := LoadFromOperatingEnvironment(dir)
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var zyztems []zyztemSummary
+		for _, id := range expectedIDs {
+			zyztems = append(zyztems, zyztemSummary{ID: id})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(zyztems)
+	}))
+	defer mockServer.Close()
+
+	_, rootNode, err := LoadFromServer(mockServer.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, len(expectedIDs), len(rootNode.Children))
 
@@ -113,10 +95,8 @@ func TestFileFindInOperatingEnvironment(t *testing.T) {
 		seen[id] = true
 	}
 
-	missingDir := filepath.Join(t.TempDir(), "does-not-exist")
-	_, _, err = LoadFromOperatingEnvironment(missingDir)
+	_, _, err = LoadFromServer("http://localhost:1")
 	assert.Error(t, err)
-
 }
 
 //TODO: Add an integration test in the actual command test which verifies that the PID is running when a real item is created

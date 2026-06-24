@@ -1,8 +1,9 @@
 package navigator
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
+	"net/http"
 	"strings"
 )
 
@@ -17,6 +18,10 @@ const (
 	Device
 	Sensor
 )
+
+type zyztemSummary struct {
+	ID string `json:"ID"`
+}
 
 type NavigatorNode struct {
 	ID       ID //need to determine ID
@@ -98,31 +103,31 @@ func (nav *Navigator) Down(child *NavigatorNode) error {
 
 }
 
-func LoadFromOperatingEnvironment(path string) (*Navigator, *NavigatorNode, error) {
-	entries, err := os.ReadDir(path)
+func LoadFromServer(baseURL string) (*Navigator, *NavigatorNode, error) {
+	resp, err := http.Get(baseURL + "/zyztems/list")
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading operating environment dir %q: %w", path, err)
+		return nil, nil, fmt.Errorf("requesting zyztem list: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("unexpected status from server: %d", resp.StatusCode)
+	}
+
+	var zyztems []zyztemSummary
+	if err := json.NewDecoder(resp.Body).Decode(&zyztems); err != nil {
+		return nil, nil, fmt.Errorf("decoding zyztem list: %w", err)
 	}
 
 	navigator, rootNode := New()
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
+	for _, z := range zyztems {
 		childNode, err := rootNode.Add()
 		if err != nil {
-			return nil, nil, fmt.Errorf("adding node for file %q: %w", entry.Name(), err)
+			return nil, nil, fmt.Errorf("adding node for zyztem %q: %w", z.ID, err)
 		}
-		childNode.ID = ID(entry.Name())
+		childNode.ID = ID(z.ID)
 	}
 
 	return navigator, rootNode, nil
 }
-
-//Create functionality to read folder where systems should be (decide file format)
-//Basically I think I'm just going to iterate the file names and store the PID then access all other information via this navigator (really good information to log to verify for clean-up)
-
-//I imagine this will simply return the current node and directions
-
-//nvigator will have a parent child tree system
