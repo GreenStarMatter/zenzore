@@ -2,6 +2,7 @@ package navigator
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -95,6 +96,28 @@ func (nav *Navigator) Down(child *NavigatorNode) error {
 	}
 	return fmt.Errorf("node %q is not a child of current node %q", child.ID, nav.CurrentNode.ID)
 
+}
+
+func LoadFromOperatingEnvironment(path string) (*Navigator, *NavigatorNode, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("reading operating environment dir %q: %w", path, err)
+	}
+
+	navigator, rootNode := New()
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		childNode, err := rootNode.Add()
+		if err != nil {
+			return nil, nil, fmt.Errorf("adding node for file %q: %w", entry.Name(), err)
+		}
+		childNode.ID = ID(entry.Name())
+	}
+
+	return navigator, rootNode, nil
 }
 
 //Create functionality to read folder where systems should be (decide file format)

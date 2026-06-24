@@ -2,6 +2,8 @@ package navigator
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -71,7 +73,7 @@ func TestFileFindInOperatingEnvironment(t *testing.T) {
 	//attempt to find files in srv path (do happy and unhappy path)
 	//Place a file manually
 
-	//TODO: Make test which finds files in server location
+	//TODO: Make test which finds files in server location (Should be in PWD or Stored in environment variable to point at data location)
 	//verify folder location exists
 	//verify folder empty when starts (terminate test if not empty because this means that the system is already operating)
 	//Add dummy files with mocked PID
@@ -86,6 +88,35 @@ func TestFileFindInOperatingEnvironment(t *testing.T) {
 	//iterate through fileNameArray and add a NavigatorNode for each PID
 	//assert that the rootNode has 5 children
 	//iterate through Children and assert that each ID is in 1..5 and none repeat
-	//TODO: Add an integration test in the actual command test which verifies that the PID is running when a real item is created
+	dir := t.TempDir() // fresh, guaranteed-empty dir; auto-cleaned after test
+
+	entries, err := os.ReadDir(dir)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(entries), "expected fresh dir to start empty")
+
+	expectedIDs := []string{"1", "2", "3", "4", "5"}
+	for _, name := range expectedIDs {
+		f, err := os.Create(filepath.Join(dir, name))
+		assert.NoError(t, err)
+		assert.NoError(t, f.Close())
+	}
+
+	_, rootNode, err := LoadFromOperatingEnvironment(dir)
+	assert.NoError(t, err)
+	assert.Equal(t, len(expectedIDs), len(rootNode.Children))
+
+	seen := make(map[string]bool)
+	for _, child := range rootNode.Children {
+		id := string(child.ID)
+		assert.Contains(t, expectedIDs, id, "unexpected ID %q found", id)
+		assert.False(t, seen[id], "duplicate ID %q found", id)
+		seen[id] = true
+	}
+
+	missingDir := filepath.Join(t.TempDir(), "does-not-exist")
+	_, _, err = LoadFromOperatingEnvironment(missingDir)
+	assert.Error(t, err)
 
 }
+
+//TODO: Add an integration test in the actual command test which verifies that the PID is running when a real item is created
