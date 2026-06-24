@@ -66,15 +66,13 @@ func (zyztem *Zyztem) AddDevice(sn, pn string) *Device {
 }
 
 func (zyztem *Zyztem) RemoveDevice(device *Device) error {
-	return fmt.Errorf("failed to remove device from zyztem")
-}
-
-//func (*ZyztemNode) Remove(child *ZyztemNode) error {
-//	return fmt.Errorf("failed to delete node")
-//}
-
-func (*Zyztem) Print() string {
-	return "No Zyztem Logic Yet"
+	for i, d := range zyztem.Devices {
+		if d == device {
+			zyztem.Devices = append(zyztem.Devices[:i], zyztem.Devices[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("device %q not found in zyztem", device.SN)
 }
 
 func (device *Device) AddSensor(sn, pn string) *Sensor {
@@ -84,7 +82,13 @@ func (device *Device) AddSensor(sn, pn string) *Sensor {
 }
 
 func (device *Device) RemoveSensor(sensor *Sensor) error {
-	return fmt.Errorf("failed to remove sensor from device")
+	for i, s := range device.Sensors {
+		if s == sensor {
+			device.Sensors = append(device.Sensors[:i], device.Sensors[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("sensor %q not found in device", sensor.SN)
 }
 
 func (device *Device) ExportDeviceData() []byte {
