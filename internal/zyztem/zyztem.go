@@ -73,10 +73,6 @@ func (zyztem *Zyztem) RemoveDevice(device *Device) error {
 //	return fmt.Errorf("failed to delete node")
 //}
 
-func (*Zyztem) Remove() error {
-	return fmt.Errorf("failed to delete zyztem")
-}
-
 func (*Zyztem) Print() string {
 	return "No Zyztem Logic Yet"
 }

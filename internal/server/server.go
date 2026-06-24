@@ -67,6 +67,16 @@ func (reg *registry) list() []*zyztem.Zyztem {
 	return out
 }
 
+func (reg *registry) remove(id string) error {
+	reg.mu.Lock()
+	defer reg.mu.Unlock()
+	if _, exists := reg.zyztems[id]; !exists {
+		return fmt.Errorf("zyztem %q does not exist", id)
+	}
+	delete(reg.zyztems, id)
+	return nil
+}
+
 // Server holds the root server's state, including the registry of
 // zyztems it has created. Use NewServer to construct one.
 type Server struct {
@@ -96,6 +106,21 @@ func (s *Server) createZyztem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) removeZyztem(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "missing id parameter", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.reg.remove(id); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) listZyztems(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(s.reg.list()); err != nil {
@@ -120,6 +145,7 @@ func (s *Server) Run() error {
 	mux.HandleFunc("/zyztems/create", s.createZyztem)
 	mux.HandleFunc("/zyztems/list", s.listZyztems)
 	mux.HandleFunc("/zyztems/augment", s.augmentZyztem)
+	mux.HandleFunc("/zyztems/remove", s.removeZyztem)
 	// ... register other routes
 
 	srv := &http.Server{Addr: ":" + port, Handler: mux}

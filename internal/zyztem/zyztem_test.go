@@ -5,24 +5,6 @@ import (
 	"testing"
 )
 
-func TestCreateRemoveZyztem(t *testing.T) {
-	//TODO: test create logic for zyztem
-	//test that new process can be created
-	//test that a new process cannot be created on top of an existing one
-	//test that trying to remove a non-existent zyztem fails
-	//test remove logic works and fails appropriately if zyztem is unavailable to be removed
-	//make sure that PID ./srv reflects state of zyztems
-	//New zyztem, Get Nav, Remove zyztem
-	exists, err := CheckForExistingZyztem()
-	assert.NoError(t, err)
-	assert.True(t, exists)
-	zyztem := New()
-	assert.NoError(t, zyztem.Remove())
-	assert.Error(t, zyztem.Remove())
-	//test that navigator is properly initialized
-
-}
-
 func TestSensor(t *testing.T) {
 	sensor := NewSensor("sn 1", "pn 1")
 	assert.Equal(t, 1, sensor.Signal.GenerateSignalSample())
@@ -85,8 +67,6 @@ func TestSubZyztemAddRemove(t *testing.T) {
 	assert.NoError(t, zyztem.RemoveDevice(device2))
 	assert.Error(t, device2.RemoveSensor(sensor3))
 
-	assert.NoError(t, zyztem.Remove())
-	assert.Error(t, zyztem.Remove())
 }
 
 func TestZyztemPrint(t *testing.T) {

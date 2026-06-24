@@ -137,3 +137,24 @@ func TestAugmentZyztem_NotImplemented(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotImplemented, rec.Code)
 }
+
+func TestCreateAndRemoveZyztem(t *testing.T) {
+	s := NewServer()
+
+	createReq := httptest.NewRequest(http.MethodPost, "/zyztems/create", nil)
+	createRec := httptest.NewRecorder()
+	s.createZyztem(createRec, createReq)
+
+	var created zyztem.Zyztem
+	assert.NoError(t, json.Unmarshal(createRec.Body.Bytes(), &created))
+
+	removeReq := httptest.NewRequest(http.MethodPost, "/zyztems/remove?id="+created.ID, nil)
+	removeRec := httptest.NewRecorder()
+	s.removeZyztem(removeRec, removeReq)
+	assert.Equal(t, http.StatusNoContent, removeRec.Code)
+
+	removeAgainReq := httptest.NewRequest(http.MethodPost, "/zyztems/remove?id="+created.ID, nil)
+	removeAgainRec := httptest.NewRecorder()
+	s.removeZyztem(removeAgainRec, removeAgainReq)
+	assert.Equal(t, http.StatusNotFound, removeAgainRec.Code)
+}
