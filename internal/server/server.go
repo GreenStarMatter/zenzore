@@ -13,10 +13,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GreenStarMatter/zenzore/internal/message"
 	"github.com/GreenStarMatter/zenzore/internal/zyztem"
 )
 
 const PortEnvVar = "ZENZORE_PORT"
+
+type Server struct {
+	reg *registry
+}
 
 // Port resolves the port the root server should listen on.
 func Port() (string, error) {
@@ -77,10 +82,28 @@ func (reg *registry) remove(id string) error {
 	return nil
 }
 
-// Server holds the root server's state, including the registry of
-// zyztems it has created. Use NewServer to construct one.
-type Server struct {
-	reg *registry
+func (s *Server) SendAllZyztems(topicName string) error {
+	for _, z := range s.reg.list() {
+		psm := message.New()
+
+		if err := psm.CreatePubSubClient(); err != nil {
+			return fmt.Errorf("creating pubsub client for zyztem %q: %w", z.ID, err)
+		}
+
+		data, err := json.Marshal(z)
+		if err != nil {
+			psm.Client.Close()
+			return fmt.Errorf("marshaling zyztem %q: %w", z.ID, err)
+		}
+		psm.AcceptGenericJson(data)
+
+		err = psm.SendMessageToPubSub(topicName)
+		psm.Client.Close()
+		if err != nil {
+			return fmt.Errorf("sending zyztem %q: %w", z.ID, err)
+		}
+	}
+	return nil
 }
 
 // NewServer builds a Server with a fresh, empty registry.
@@ -133,6 +156,21 @@ func (s *Server) augmentZyztem(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "not implemented", http.StatusNotImplemented)
 }
 
+func (s *Server) sendAllZyztems(w http.ResponseWriter, r *http.Request) {
+	topicName := os.Getenv(message.TOPIC_ID_ENV_VAR)
+	if topicName == "" {
+		http.Error(w, fmt.Sprintf("%s not set", message.TOPIC_ID_ENV_VAR), http.StatusInternalServerError)
+		return
+	}
+
+	if err := s.SendAllZyztems(topicName); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Run starts the root HTTP server and blocks until it is shut down,
 // either via SIGINT/SIGTERM or an internal server error.
 func (s *Server) Run() error {
@@ -146,6 +184,7 @@ func (s *Server) Run() error {
 	mux.HandleFunc("/zyztems/list", s.listZyztems)
 	mux.HandleFunc("/zyztems/augment", s.augmentZyztem)
 	mux.HandleFunc("/zyztems/remove", s.removeZyztem)
+	mux.HandleFunc("/zyztems/send", s.sendAllZyztems)
 	// ... register other routes
 
 	srv := &http.Server{Addr: ":" + port, Handler: mux}
