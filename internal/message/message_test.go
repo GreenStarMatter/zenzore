@@ -1,13 +1,14 @@
 package message
 
 import (
-	"cloud.google.com/go/pubsub/v2"
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestOutputMessage(t *testing.T) {
 	//TODO: verify that a message is properly formed
+
 	message := New()
 	msg := map[string]any{
 		"SN":        "ABC123",
@@ -15,21 +16,25 @@ func TestOutputMessage(t *testing.T) {
 		"Reading_1": 3,
 		"Reading_2": 2,
 	}
-	assert.NoError(t, message.FormatMessage(msg))
-	assert.Equal(t, []byte("Fail For Sure"), message.Message)
-	message.AcceptGenericJson(message.Message)
-	assert.Equal(t, []byte("Fail For Sure"), message.Message)
 
-}
-
-func TestGCPConnectionFailureHandling(t *testing.T) {
-
-	//TODO: verify that app can handle a failed connection to GCP
-	//I'm thinking that this sends a "dormant" command to rest of zyztems
-	//This just stops them from advancing their clocks and keeps them in a waiting state
-	//Will have to fill out result (maybe with temp interface that mocks different errors)
-	message := New()
-	var result *pubsub.PublishResult
-	err := message.HandlePubSubResults(result)
+	err := message.FormatMessage(msg)
 	assert.NoError(t, err)
+
+	var got map[string]any
+	err = json.Unmarshal(message.Message, &got)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "ABC123", got["SN"])
+	assert.Equal(t, "PART-456", got["PN"])
+	assert.Equal(t, float64(3), got["Reading_1"])
+	assert.Equal(t, float64(2), got["Reading_2"])
+
+	newJSON := []byte(`{"SN":"XYZ789","PN":"PART-999","Reading_1":10,"Reading_2":20}`)
+	message.AcceptGenericJson(newJSON)
+	assert.Equal(t, newJSON, message.Message)
+
+	var got2 map[string]any
+	err = json.Unmarshal(message.Message, &got2)
+	assert.NoError(t, err)
+	assert.Equal(t, "XYZ789", got2["SN"])
 }

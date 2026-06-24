@@ -6,14 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"google.golang.org/api/option"
-	"log"
 	"os"
 )
-
-//Reformat needs to essentially be
-//Make message
-//Connect to sender
-//Send message
 
 const ZENSOREKEY_ENV_VAR = "ZENZOREKEY"
 const PROJECT_ID_ENV_VAR = "ZENZOREPROJECTID"
@@ -25,31 +19,29 @@ type PubSubMessage struct {
 	Client  *pubsub.Client
 }
 
-func (psm *PubSubMessage) CreatePubSubClient() {
+func (psm *PubSubMessage) CreatePubSubClient() error {
 	keyPath := os.Getenv(ZENSOREKEY_ENV_VAR)
 	if keyPath == "" {
-		fmt.Printf("Failed to find zenzore key env var\n")
-		os.Exit(1)
+		return fmt.Errorf("failed to find %s env var", ZENSOREKEY_ENV_VAR)
 	}
-
 	projectId := os.Getenv(PROJECT_ID_ENV_VAR)
 	if projectId == "" {
-		fmt.Printf("Failed to find projectId env var\n")
-		os.Exit(1)
+		return fmt.Errorf("failed to find %s env var", PROJECT_ID_ENV_VAR)
 	}
 	client, err := pubsub.NewClient(psm.Ctx, projectId,
 		option.WithAuthCredentialsFile(option.ServiceAccount, keyPath))
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("creating pubsub client: %w", err)
 	}
 	psm.Client = client
+	return nil
 }
 
 func (psm *PubSubMessage) FormatMessage(msg map[string]any) error {
 
 	data, err := json.Marshal(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal message: %w", err)
 	}
 	psm.Message = data
 	return nil
@@ -70,16 +62,12 @@ func (psm *PubSubMessage) HandlePubSubResults(result *pubsub.PublishResult) erro
 	//TODO: Handle for different types of errors
 	//retry on connection failures
 	//pass error on credential failures
-	/*
-		id, err := result.Get(psm.Ctx)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Sent Message: %s\n", id)
-		return nil
-	*/
-	return fmt.Errorf("not implemented yet")
-
+	id, err := result.Get(psm.Ctx)
+	if err != nil {
+		return fmt.Errorf("publish failed: %w", err)
+	}
+	fmt.Printf("Sent Message: %s\n", id)
+	return nil
 }
 
 func (psm *PubSubMessage) AcceptGenericJson(incomingJson []byte) {
