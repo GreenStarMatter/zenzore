@@ -129,19 +129,114 @@ func (s *Server) createZyztem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//func (s *Server) removeZyztem(w http.ResponseWriter, r *http.Request) {
+//	id := r.URL.Query().Get("id")
+//	if id == "" {
+//		http.Error(w, "missing id parameter", http.StatusBadRequest)
+//		return
+//	}
+//
+//	if err := s.reg.remove(id); err != nil {
+//		http.Error(w, err.Error(), http.StatusNotFound)
+//		return
+//	}
+//
+//	w.WriteHeader(http.StatusNoContent)
+//}
+
 func (s *Server) removeZyztem(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "missing id parameter", http.StatusBadRequest)
+	id := r.PathValue("id")
+	if err := s.reg.remove(id); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) listDevices(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, "zyztem not found", http.StatusNotFound)
 		return
 	}
 
-	if err := s.reg.remove(id); err != nil {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(z.Devices); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) getDevice(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	pn := r.PathValue("pn")
+	sn := r.PathValue("sn")
+
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, "zyztem not found", http.StatusNotFound)
+		return
+	}
+
+	device, ok := z.FindDevice(sn, pn)
+	if !ok {
+		http.Error(w, "device not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(device); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) addDevice(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, fmt.Sprintf("zyztem %q not found", id), http.StatusNotFound)
+		return
+	}
+
+	var req struct {
+		SN string `json:"SN"`
+		PN string `json:"PN"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	device := z.AddDevice(req.SN, req.PN)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(device); err != nil {
+		http.Error(w, fmt.Sprintf("encoding response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) removeDevice(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	pn := r.PathValue("pn")
+	sn := r.PathValue("sn")
+
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, "zyztem not found", http.StatusNotFound)
+		return
+	}
+
+	if err := z.RemoveDevice(sn, pn); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) updateDevice(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "device has no mutable fields", http.StatusNotImplemented)
 }
 
 func (s *Server) listZyztems(w http.ResponseWriter, r *http.Request) {
@@ -180,11 +275,18 @@ func (s *Server) Run() error {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/zyztems/create", s.createZyztem)
-	mux.HandleFunc("/zyztems/list", s.listZyztems)
-	mux.HandleFunc("/zyztems/augment", s.augmentZyztem)
-	mux.HandleFunc("/zyztems/remove", s.removeZyztem)
-	mux.HandleFunc("/zyztems/send", s.sendAllZyztems)
+	mux.HandleFunc("POST /zyztems", s.createZyztem)
+	mux.HandleFunc("GET /zyztems", s.listZyztems)
+	mux.HandleFunc("POST /zyztems/send", s.sendAllZyztems)
+	mux.HandleFunc("POST /zyztems/{id}/augment", s.augmentZyztem) //TODO: Change this to PATCH?
+	mux.HandleFunc("DELETE /zyztems/{id}", s.removeZyztem)
+
+	mux.HandleFunc("POST /zyztems/{id}/devices", s.addDevice)
+	mux.HandleFunc("GET /zyztems/{id}/devices", s.listDevices)
+	mux.HandleFunc("GET /zyztems/{id}/devices/{pn}/{sn}", s.getDevice)
+	mux.HandleFunc("PATCH /zyztems/{id}/devices/{pn}/{sn}", s.updateDevice)
+	mux.HandleFunc("DELETE /zyztems/{id}/devices/{pn}/{sn}", s.removeDevice)
+
 	// ... register other routes
 
 	srv := &http.Server{Addr: ":" + port, Handler: mux}

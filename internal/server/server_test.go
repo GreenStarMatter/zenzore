@@ -141,20 +141,29 @@ func TestAugmentZyztem_NotImplemented(t *testing.T) {
 func TestCreateAndRemoveZyztem(t *testing.T) {
 	s := NewServer()
 
-	createReq := httptest.NewRequest(http.MethodPost, "/zyztems/create", nil)
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /zyztems", s.createZyztem)
+	mux.HandleFunc("DELETE /zyztems/{id}", s.removeZyztem)
+
+	// create
+	createReq := httptest.NewRequest(http.MethodPost, "/zyztems", nil)
 	createRec := httptest.NewRecorder()
-	s.createZyztem(createRec, createReq)
+	mux.ServeHTTP(createRec, createReq)
 
 	var created zyztem.Zyztem
 	assert.NoError(t, json.Unmarshal(createRec.Body.Bytes(), &created))
 
-	removeReq := httptest.NewRequest(http.MethodPost, "/zyztems/remove?id="+created.ID, nil)
+	// delete
+	removeReq := httptest.NewRequest(http.MethodDelete, "/zyztems/"+created.ID, nil)
 	removeRec := httptest.NewRecorder()
-	s.removeZyztem(removeRec, removeReq)
+	mux.ServeHTTP(removeRec, removeReq)
+
 	assert.Equal(t, http.StatusNoContent, removeRec.Code)
 
-	removeAgainReq := httptest.NewRequest(http.MethodPost, "/zyztems/remove?id="+created.ID, nil)
+	// delete again
+	removeAgainReq := httptest.NewRequest(http.MethodDelete, "/zyztems/"+created.ID, nil)
 	removeAgainRec := httptest.NewRecorder()
-	s.removeZyztem(removeAgainRec, removeAgainReq)
+	mux.ServeHTTP(removeAgainRec, removeAgainReq)
+
 	assert.Equal(t, http.StatusNotFound, removeAgainRec.Code)
 }

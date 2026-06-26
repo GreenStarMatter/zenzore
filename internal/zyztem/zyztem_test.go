@@ -66,6 +66,7 @@ func TestSubZyztemAddRemove(t *testing.T) {
 
 	assert.Error(t, device.RemoveSensor(sensor))
 
-	assert.NoError(t, zyztem.RemoveDevice(device2))
+	assert.NoError(t, zyztem.RemoveDevice(device2.SN, device2.PN))
+	assert.Error(t, zyztem.RemoveDevice(device2.SN, device2.PN))
 
 }

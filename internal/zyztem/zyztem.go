@@ -65,14 +65,23 @@ func (zyztem *Zyztem) AddDevice(sn, pn string) *Device {
 	return device
 }
 
-func (zyztem *Zyztem) RemoveDevice(device *Device) error {
-	for i, d := range zyztem.Devices {
-		if d == device {
-			zyztem.Devices = append(zyztem.Devices[:i], zyztem.Devices[i+1:]...)
+func (z *Zyztem) RemoveDevice(sn, pn string) error {
+	for i, d := range z.Devices {
+		if d.SN == sn && d.PN == pn {
+			z.Devices = append(z.Devices[:i], z.Devices[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("device %q not found in zyztem", device.SN)
+	return fmt.Errorf("device not found")
+}
+
+func (z *Zyztem) FindDevice(sn, pn string) (*Device, bool) {
+	for _, d := range z.Devices {
+		if d.SN == sn && d.PN == pn {
+			return d, true
+		}
+	}
+	return nil, false
 }
 
 func (device *Device) AddSensor(sn, pn string) *Sensor {
