@@ -18,16 +18,16 @@ func TestDevice(t *testing.T) {
 
 	unassignedSensor := NewSensor("sn 1", "pn 1")
 	device := NewDevice("sn 1", "pn 1")
-	err := device.RemoveSensor(unassignedSensor)
+	err := device.RemoveSensor(unassignedSensor.SN, unassignedSensor.PN)
 	assert.Error(t, err)
 	sensor := device.AddSensor("dummy sensor sn", "dummy part pn")
-	err = device.RemoveSensor(unassignedSensor)
+	err = device.RemoveSensor(unassignedSensor.SN, unassignedSensor.PN)
 	assert.Error(t, err)
-	err = device.RemoveSensor(sensor)
+	err = device.RemoveSensor(sensor.SN, sensor.PN)
 	assert.NoError(t, err)
-	err = device.RemoveSensor(sensor)
+	err = device.RemoveSensor(sensor.SN, sensor.PN)
 	assert.Error(t, err)
-	err = device.RemoveSensor(unassignedSensor)
+	err = device.RemoveSensor(unassignedSensor.SN, unassignedSensor.PN)
 	assert.Error(t, err)
 
 	_ = device.AddSensor("sn 2", "pn 1")
@@ -60,11 +60,11 @@ func TestSubZyztemAddRemove(t *testing.T) {
 	_ = device2.AddSensor("dummy sensor sn", "dummy part pn 2")
 
 	assert.Equal(t, 2, len(device.Sensors))
-	assert.NoError(t, device.RemoveSensor(sensor))
+	assert.NoError(t, device.RemoveSensor(sensor.SN, sensor.PN))
 	assert.Equal(t, 1, len(device.Sensors))
 	assert.Equal(t, sensor2, device.Sensors[0])
 
-	assert.Error(t, device.RemoveSensor(sensor))
+	assert.Error(t, device.RemoveSensor(sensor.SN, sensor.PN))
 
 	assert.NoError(t, zyztem.RemoveDevice(device2.SN, device2.PN))
 	assert.Error(t, zyztem.RemoveDevice(device2.SN, device2.PN))

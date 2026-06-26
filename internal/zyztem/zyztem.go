@@ -90,14 +90,23 @@ func (device *Device) AddSensor(sn, pn string) *Sensor {
 	return sensor
 }
 
-func (device *Device) RemoveSensor(sensor *Sensor) error {
-	for i, s := range device.Sensors {
-		if s == sensor {
-			device.Sensors = append(device.Sensors[:i], device.Sensors[i+1:]...)
+func (d *Device) FindSensor(sn, pn string) (*Sensor, bool) {
+	for _, s := range d.Sensors {
+		if s.SN == sn && s.PN == pn {
+			return s, true
+		}
+	}
+	return nil, false
+}
+
+func (d *Device) RemoveSensor(sn, pn string) error {
+	for i, s := range d.Sensors {
+		if s.SN == sn && s.PN == pn {
+			d.Sensors = append(d.Sensors[:i], d.Sensors[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("sensor %q not found in device", sensor.SN)
+	return fmt.Errorf("sensor not found")
 }
 
 func (device *Device) ExportDeviceData() []byte {
