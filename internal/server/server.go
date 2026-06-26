@@ -382,6 +382,115 @@ func (s *Server) updateSensor(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "sensor has no mutable fields", http.StatusNotImplemented)
 }
 
+func (s *Server) getSignal(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	devicePN := r.PathValue("devicepn")
+	deviceSN := r.PathValue("devicesn")
+	sensorPN := r.PathValue("sensorpn")
+	sensorSN := r.PathValue("sensorsn")
+
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, "zyztem not found", http.StatusNotFound)
+		return
+	}
+
+	device, ok := z.FindDevice(deviceSN, devicePN)
+	if !ok {
+		http.Error(w, "device not found", http.StatusNotFound)
+		return
+	}
+
+	sensor, ok := device.FindSensor(sensorSN, sensorPN)
+	if !ok {
+		http.Error(w, "sensor not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sensor.Signal)
+}
+
+func (s *Server) updateSignal(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	devicePN := r.PathValue("devicepn")
+	deviceSN := r.PathValue("devicesn")
+	sensorPN := r.PathValue("sensorpn")
+	sensorSN := r.PathValue("sensorsn")
+
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, "zyztem not found", http.StatusNotFound)
+		return
+	}
+
+	device, ok := z.FindDevice(deviceSN, devicePN)
+	if !ok {
+		http.Error(w, "device not found", http.StatusNotFound)
+		return
+	}
+
+	sensor, ok := device.FindSensor(sensorSN, sensorPN)
+	if !ok {
+		http.Error(w, "sensor not found", http.StatusNotFound)
+		return
+	}
+
+	var req struct {
+		Type     string `json:"type"`
+		Expected int    `json:"expected"`
+		Random   int    `json:"random"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	signal := sensor.UpdateSignal(req.Type, req.Expected, req.Random)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(signal)
+}
+
+func (s *Server) sampleSensor(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	devicePN := r.PathValue("devicepn")
+	deviceSN := r.PathValue("devicesn")
+	sensorPN := r.PathValue("sensorpn")
+	sensorSN := r.PathValue("sensorsn")
+
+	z, ok := s.reg.get(id)
+	if !ok {
+		http.Error(w, "zyztem not found", http.StatusNotFound)
+		return
+	}
+
+	device, ok := z.FindDevice(deviceSN, devicePN)
+	if !ok {
+		http.Error(w, "device not found", http.StatusNotFound)
+		return
+	}
+
+	sensor, ok := device.FindSensor(sensorSN, sensorPN)
+	if !ok {
+		http.Error(w, "sensor not found", http.StatusNotFound)
+		return
+	}
+
+	if sensor.Signal == nil {
+		http.Error(w, "sensor has no signal", http.StatusBadRequest)
+		return
+	}
+
+	sensor.Signal.GenerateSignalSample()
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(sensor); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // Run starts the root HTTP server and blocks until it is shut down,
 // either via SIGINT/SIGTERM or an internal server error.
 func (s *Server) Run() error {
@@ -409,6 +518,18 @@ func (s *Server) Run() error {
 	mux.HandleFunc("PATCH /zyztems/{id}/devices/{devicepn}/{devicesn}/sensors/{sensorpn}/{sensorsn}", s.updateSensor)
 	mux.HandleFunc("DELETE /zyztems/{id}/devices/{devicepn}/{devicesn}/sensors/{sensorpn}/{sensorsn}", s.removeSensor)
 
+	mux.HandleFunc(
+		"GET /zyztems/{id}/devices/{devicepn}/{devicesn}/sensors/{sensorpn}/{sensorsn}/signal",
+		s.getSignal,
+	)
+	mux.HandleFunc(
+		"PATCH /zyztems/{id}/devices/{devicepn}/{devicesn}/sensors/{sensorpn}/{sensorsn}/signal",
+		s.updateSignal,
+	)
+	mux.HandleFunc(
+		"POST /zyztems/{id}/devices/{devicepn}/{devicesn}/sensors/{sensorpn}/{sensorsn}/sample",
+		s.sampleSensor,
+	)
 	srv := &http.Server{Addr: ":" + port, Handler: mux}
 
 	go func() {
