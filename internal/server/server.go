@@ -129,21 +129,6 @@ func (s *Server) createZyztem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//func (s *Server) removeZyztem(w http.ResponseWriter, r *http.Request) {
-//	id := r.URL.Query().Get("id")
-//	if id == "" {
-//		http.Error(w, "missing id parameter", http.StatusBadRequest)
-//		return
-//	}
-//
-//	if err := s.reg.remove(id); err != nil {
-//		http.Error(w, err.Error(), http.StatusNotFound)
-//		return
-//	}
-//
-//	w.WriteHeader(http.StatusNoContent)
-//}
-
 func (s *Server) removeZyztem(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := s.reg.remove(id); err != nil {

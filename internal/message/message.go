@@ -19,6 +19,11 @@ type PubSubMessage struct {
 	Client  *pubsub.Client
 }
 
+func New() *PubSubMessage {
+	ctx := context.Background()
+	return &PubSubMessage{Ctx: ctx}
+}
+
 func (psm *PubSubMessage) CreatePubSubClient() error {
 	keyPath := os.Getenv(ZENSOREKEY_ENV_VAR)
 	if keyPath == "" {
@@ -72,31 +77,4 @@ func (psm *PubSubMessage) HandlePubSubResults(result *pubsub.PublishResult) erro
 
 func (psm *PubSubMessage) AcceptGenericJson(incomingJson []byte) {
 	psm.Message = incomingJson
-}
-
-func New() *PubSubMessage {
-	ctx := context.Background()
-	return &PubSubMessage{Ctx: ctx}
-}
-
-func main() {
-	//TODO: Move this into application logic
-	message := New()
-	message.CreatePubSubClient()
-	defer message.Client.Close()
-
-	msg := map[string]any{
-		"SN":        "ABC123",
-		"PN":        "PART-456",
-		"Reading_1": 3,
-		"Reading_2": 2,
-	}
-	message.FormatMessage(msg)
-
-	topicName := os.Getenv(TOPIC_ID_ENV_VAR)
-	if topicName == "" {
-		fmt.Printf("Failed to find topic env var\n")
-		os.Exit(1)
-	}
-	message.SendMessageToPubSub(topicName)
 }
