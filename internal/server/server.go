@@ -193,8 +193,11 @@ func (s *Server) addDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	device := z.AddDevice(req.SN, req.PN)
-
+	device, err := z.AddDevice(req.SN, req.PN)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(device); err != nil {
 		http.Error(w, fmt.Sprintf("encoding response: %v", err), http.StatusInternalServerError)
@@ -278,7 +281,11 @@ func (s *Server) addSensor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sensor := device.AddSensor(req.SN, req.PN)
+	sensor, err := device.AddSensor(req.SN, req.PN)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(sensor); err != nil {

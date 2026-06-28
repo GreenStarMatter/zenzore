@@ -49,10 +49,15 @@ func NewDevice(sn, pn string) *Device {
 	return &Device{SN: sn, PN: pn, Sensors: sensors}
 }
 
-func (zyztem *Zyztem) AddDevice(sn, pn string) *Device {
+func (zyztem *Zyztem) AddDevice(sn, pn string) (*Device, error) {
+	for _, d := range zyztem.Devices {
+		if d.SN == sn && d.PN == pn {
+			return nil, fmt.Errorf("device with SN %q and PN %q already exists in zyztem", sn, pn)
+		}
+	}
 	device := NewDevice(sn, pn)
 	zyztem.Devices = append(zyztem.Devices, device)
-	return device
+	return device, nil
 }
 
 func (z *Zyztem) RemoveDevice(sn, pn string) error {
@@ -84,10 +89,17 @@ func NewSensor(sn, pn string) *Sensor {
 	return sensor
 }
 
-func (device *Device) AddSensor(sn, pn string) *Sensor {
+func (device *Device) AddSensor(sn, pn string) (*Sensor, error) {
+
+	for _, d := range device.Sensors {
+		if d.SN == sn && d.PN == pn {
+			return nil, fmt.Errorf("sensor with SN %q and PN %q already exists in device", sn, pn)
+		}
+	}
+
 	sensor := NewSensor(sn, pn)
 	device.Sensors = append(device.Sensors, sensor)
-	return sensor
+	return sensor, nil
 }
 
 func (d *Device) FindSensor(sn, pn string) (*Sensor, bool) {

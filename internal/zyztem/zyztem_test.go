@@ -18,7 +18,10 @@ func TestDevice(t *testing.T) {
 	device := NewDevice("sn 1", "pn 1")
 	err := device.RemoveSensor(unassignedSensor.SN, unassignedSensor.PN)
 	assert.Error(t, err)
-	sensor := device.AddSensor("dummy sensor sn", "dummy part pn")
+	sensor, err := device.AddSensor("dummy sensor sn", "dummy part pn")
+	assert.NoError(t, err)
+	_, err = device.AddSensor("dummy sensor sn", "dummy part pn")
+	assert.Error(t, err)
 	err = device.RemoveSensor(unassignedSensor.SN, unassignedSensor.PN)
 	assert.Error(t, err)
 	err = device.RemoveSensor(sensor.SN, sensor.PN)
@@ -28,8 +31,8 @@ func TestDevice(t *testing.T) {
 	err = device.RemoveSensor(unassignedSensor.SN, unassignedSensor.PN)
 	assert.Error(t, err)
 
-	_ = device.AddSensor("sn 2", "pn 1")
-	sensor3 := device.AddSensor("sn 2", "pn 3")
+	_, _ = device.AddSensor("sn 2", "pn 1")
+	sensor3, _ := device.AddSensor("sn 2", "pn 3")
 
 	sensor3.UpdateSignal("updated", 4, 3)
 }
@@ -37,11 +40,15 @@ func TestDevice(t *testing.T) {
 func TestSubZyztemAddRemove(t *testing.T) {
 
 	zyztem := New()
-	device := zyztem.AddDevice("dummy device serial", "dummy device part")
-	sensor := device.AddSensor("dummy sensor sn", "dummy part pn")
-	sensor2 := device.AddSensor("dummy sensor sn 2", "dummy part pn 2")
-	device2 := zyztem.AddDevice("dummy device serial 2", "dummy device part 2")
-	_ = device2.AddSensor("dummy sensor sn", "dummy part pn 2")
+	device, err := zyztem.AddDevice("dummy device serial", "dummy device part")
+	assert.NoError(t, err)
+	_, err = zyztem.AddDevice("dummy device serial", "dummy device part")
+	assert.Error(t, err)
+	sensor, _ := device.AddSensor("dummy sensor sn", "dummy part pn")
+	sensor2, _ := device.AddSensor("dummy sensor sn 2", "dummy part pn 2")
+	device2, err := zyztem.AddDevice("dummy device serial 2", "dummy device part 2")
+	assert.NoError(t, err)
+	_, _ = device2.AddSensor("dummy sensor sn", "dummy part pn 2")
 
 	assert.Equal(t, 2, len(device.Sensors))
 	assert.NoError(t, device.RemoveSensor(sensor.SN, sensor.PN))
