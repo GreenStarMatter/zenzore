@@ -1,10 +1,8 @@
 package zyztem
 
 import (
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 func TestSensor(t *testing.T) {
@@ -34,20 +32,6 @@ func TestDevice(t *testing.T) {
 	sensor3 := device.AddSensor("sn 2", "pn 3")
 
 	sensor3.UpdateSignal("updated", 4, 3)
-	jsonByteOut := device.ExportDeviceData()
-
-	var got Device
-	err = json.Unmarshal(jsonByteOut, &got)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "sn 1", got.SN)
-	assert.Equal(t, "pn 1", got.PN)
-	assert.Equal(t, 2, len(got.Sensors))
-
-	exportTime, err := time.Parse(time.RFC3339Nano, got.DeviceExportTime)
-	assert.NoError(t, err)
-	assert.WithinDuration(t, time.Now(), exportTime, 5*time.Second)
-
 }
 
 func TestSubZyztemAddRemove(t *testing.T) {

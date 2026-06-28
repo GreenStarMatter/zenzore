@@ -1,9 +1,7 @@
 package zyztem
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -74,15 +72,6 @@ func (z *Zyztem) FindDevice(sn, pn string) (*Device, bool) {
 		}
 	}
 	return nil, false
-}
-
-func (device *Device) ExportDeviceData() []byte {
-	device.DeviceExportTime = FormatTimeStamp(time.Now())
-	jsonData, err := json.Marshal(device)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return jsonData
 }
 
 func NewSensor(sn, pn string) *Sensor {
