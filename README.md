@@ -1,16 +1,48 @@
 # Zenzore
-> Version 1.0.0
+> Version 1.1.0
 
 This project will create mock sensor data and integrate with a GCP Pub/Sub Topic.
 
 
-Zenzore is a CLI which mocks devices containing sensors and passes sampleddata out in a bulk message.  The app will be pseudo-simulated meaning that there will be some mathematical constructs which bind devices, sensors, and samples; however, the app will not be a strict physical simulation.  The focus is on the transfer of information to create the basis of a data pipeline.
+Zenzore is a CLI which mocks devices containing sensors and passes sampled data out in a bulk message.  The app will be pseudo-simulated meaning that there will be some mathematical constructs which bind devices, sensors, and samples; however, the app will not be a strict physical simulation.  The focus is on the transfer of information to create the basis of a data pipeline.
 
 ## Generic Architecture
 
+**Backend**
 1. A CLI front-end for creating zyztems, managing their state, and persisting
 1. A server back-end allowing for in memory persistence of state and organizing user interfaces with the app logic
 1. An authentication and transport layer which will output messages to Pub/Sub using ADC
+
+**GCP Data Pipeline**
+1. A Pub/Sub ingest topic receiving messages from the Zenzore backend
+1. A BigQuery subscription writing messages directly to a raw events table using the table schema
+1. A dead-letter topic and Cloud Storage sink for capturing failed messages
+1. All infrastructure managed via Terraform in the `infra/` directory
+
+## Setup Data Pipeline
+
+### 1. Configure environment variables
+Copy the example env file and fill in your own values:
+```bash
+cp infra/EXAMPLE infra/.env.tf
+```
+Edit `infra/.env.tf` with your GCP project ID and resource names, then source it:
+```bash
+source infra/.env.tf
+```
+This must be repeated in each new terminal session before running Terraform commands.
+
+### 2. Run Terraform
+Initialize, plan, and apply the infrastructure:
+```bash
+make tf-init
+make tf-plan
+make tf-apply
+```
+To tear down all managed infrastructure:
+```bash
+make tf-destroy
+```
 
 ## App Command Structure
 
@@ -33,6 +65,7 @@ Zenzore is a CLI which mocks devices containing sensors and passes sampleddata o
         - message
         - server
         - appdata (deprecated, but likely to be replaced by db persistence)
+    - infra
 
 
 ## Environment Variables
@@ -52,7 +85,7 @@ Zenzore reads its configuration from environment variables rather than a config 
 | `ZENZOREPROJECTID` | Yes | The GCP project ID the Pub/Sub topic belongs to. |
 | `ZENZORETOPICID` | Yes | The Pub/Sub topic name messages are published to. |
 
-All three are required only when triggering a send (e.g. hitting `/zyztems/send`); they are not needed to run `nav` or `diagnostics` against an already-running server.
+Both are required only when triggering a send (e.g. hitting `/zyztems/send`); they are not needed to run `nav` or `diagnostics` against an already-running server.
 
 ### Connecting to a running server (`zenzore nav`)
 
@@ -99,6 +132,18 @@ runs tests over entire project and creates machine readable coverage profile
 `make coverage`
 
 runs a pass fail gate by measure coverage reater than 80 percent.
+
+`make tf-init`
+initializes Terraform and downloads the GCP provider in the `infra/` directory
+
+`make tf-plan`
+shows a dry-run of infrastructure changes without applying them
+
+`make tf-apply`
+creates or updates all GCP infrastructure defined in `infra/`
+
+`make tf-destroy`
+tears down all Terraform-managed GCP infrastructure
 
 **GitHub Pipelines**
 
