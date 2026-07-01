@@ -27,3 +27,15 @@ test:
 coverage:
 	go tool cover -func coverage.out | grep "total:" | \
 	awk '{print ((int($$3) > 80) != 1) }'
+
+tf-init:
+	cd infra && terraform init
+
+tf-plan:
+	cd infra && terraform plan
+
+tf-apply:
+	cd infra && terraform apply
+
+tf-destroy:
+	cd infra && terraform destroy
