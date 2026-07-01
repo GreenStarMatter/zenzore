@@ -10,7 +10,7 @@ Zenzore is a CLI which mocks devices containing sensors and passes sampleddata o
 
 1. A CLI front-end for creating zyztems, managing their state, and persisting
 1. A server back-end allowing for in memory persistence of state and organizing user interfaces with the app logic
-1. An authentication and transport layer which will output messages to Pub/Sub 
+1. An authentication and transport layer which will output messages to Pub/Sub using ADC
 
 ## App Command Structure
 
@@ -49,7 +49,6 @@ Zenzore reads its configuration from environment variables rather than a config 
 
 | Variable | Required | Description |
 |---|---|---|
-| `ZENZOREKEY` | Yes | Path to a GCP service account key file used to authenticate. |
 | `ZENZOREPROJECTID` | Yes | The GCP project ID the Pub/Sub topic belongs to. |
 | `ZENZORETOPICID` | Yes | The Pub/Sub topic name messages are published to. |
 
