@@ -5,11 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"google.golang.org/api/option"
+	//	"google.golang.org/api/option"
 	"os"
 )
 
-const ZENSOREKEY_ENV_VAR = "ZENZOREKEY"
 const PROJECT_ID_ENV_VAR = "ZENZOREPROJECTID"
 const TOPIC_ID_ENV_VAR = "ZENZORETOPICID"
 
@@ -25,16 +24,11 @@ func New() *PubSubMessage {
 }
 
 func (psm *PubSubMessage) CreatePubSubClient() error {
-	keyPath := os.Getenv(ZENSOREKEY_ENV_VAR)
-	if keyPath == "" {
-		return fmt.Errorf("failed to find %s env var", ZENSOREKEY_ENV_VAR)
-	}
 	projectId := os.Getenv(PROJECT_ID_ENV_VAR)
 	if projectId == "" {
 		return fmt.Errorf("failed to find %s env var", PROJECT_ID_ENV_VAR)
 	}
-	client, err := pubsub.NewClient(psm.Ctx, projectId,
-		option.WithAuthCredentialsFile(option.ServiceAccount, keyPath))
+	client, err := pubsub.NewClient(psm.Ctx, projectId)
 	if err != nil {
 		return fmt.Errorf("creating pubsub client: %w", err)
 	}
