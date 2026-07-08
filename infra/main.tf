@@ -2,6 +2,29 @@ data "google_project" "project" {}
 
 # Enable required APIs
 
+resource "google_project_service" "sqladmin" {
+  service            = "sqladmin.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_sql_database_instance" "zenzore_registry" {
+  name             = "zenzore-registry"
+  database_version = "POSTGRES_15"
+  region           = var.region
+  deletion_protection = false
+
+  settings {
+    tier              = "db-f1-micro"
+    activation_policy = "ALWAYS"
+  }
+
+  lifecycle {
+    ignore_changes = [settings[0].activation_policy]
+  }
+
+  depends_on = [google_project_service.sqladmin]
+}
+
 resource "google_pubsub_subscription_iam_member" "dead_letter_subscriber" {
   subscription = google_pubsub_subscription.zenzore_ingest_bq_sub.name
   role         = "roles/pubsub.subscriber"
