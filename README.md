@@ -35,10 +35,14 @@ This must be repeated in each new terminal session before running Terraform comm
 ### 2. Run Terraform
 Initialize, plan, and apply the infrastructure:
 ```bash
-make tf-init
-make tf-plan
-make tf-apply
+make tf-setup
 ```
+
+It is recommended to verify that the Cloud SQL db is only active when in use.  This is an active service that can get expensive very quickly.
+```bash
+make db-setup
+```
+
 To tear down all managed infrastructure:
 ```bash
 make tf-destroy
@@ -144,6 +148,15 @@ creates or updates all GCP infrastructure defined in `infra/`
 
 `make tf-destroy`
 tears down all Terraform-managed GCP infrastructure
+
+`make db-start`
+starts Cloud SQL database instance
+
+`make db-stop`
+stops Cloud SQL database instance
+
+`make db-migrate`
+runs sql scripts to migrate transactional base table structure to Cloud SQL
 
 **GitHub Pipelines**
 

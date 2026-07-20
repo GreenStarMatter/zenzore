@@ -40,3 +40,8 @@ variable "storage_bucket_name" {
   description = "Cloud Storage bucket name"
   type        = string
 }
+
+variable "cloudsql_password" {
+  type      = string
+  sensitive = true
+}

@@ -3,6 +3,7 @@ GO_VERSION := 1.18
 .PHONY: install-go init-go tf-init tf-plan tf-apply tf-destroy db-start db-stop db-migrate db-setup
 
 setup: install-go init-go
+tf-setup: tf-init tf-plan tf-apply
 db-setup: db-start db-migrate db-stop
 
 install-go:
@@ -44,6 +45,6 @@ db-start:
 db-stop:
 	gcloud sql instances patch zenzore-registry --activation-policy=NEVER
 db-migrate:
-	PGPASSWORD=$(DB_PASSWORD) gcloud sql connect zenzore-registry \
+	PGPASSWORD=$(CLOUDSQL_PASSWORD) gcloud sql connect zenzore-registry \
 		--user=postgres \
 		--database=zenzore_registry < migrations/create_registry_tables.sql

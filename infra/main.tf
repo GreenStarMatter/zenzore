@@ -8,9 +8,9 @@ resource "google_project_service" "sqladmin" {
 }
 
 resource "google_sql_database_instance" "zenzore_registry" {
-  name             = "zenzore-registry"
-  database_version = "POSTGRES_15"
-  region           = var.region
+  name                = "zenzore-registry"
+  database_version    = "POSTGRES_15"
+  region              = var.region
   deletion_protection = false
 
   settings {
@@ -23,6 +23,17 @@ resource "google_sql_database_instance" "zenzore_registry" {
   }
 
   depends_on = [google_project_service.sqladmin]
+}
+
+resource "google_sql_database" "zenzore_registry" {
+  name     = "zenzore_registry"
+  instance = google_sql_database_instance.zenzore_registry.name
+}
+
+resource "google_sql_user" "registry_admin" {
+  name     = "registry_admin"
+  instance = google_sql_database_instance.zenzore_registry.name
+  password = var.cloudsql_password
 }
 
 resource "google_pubsub_subscription_iam_member" "dead_letter_subscriber" {
@@ -80,10 +91,10 @@ resource "google_bigquery_dataset" "zenzore_raw" {
 }
 
 resource "google_bigquery_table" "events" {
-  dataset_id = google_bigquery_dataset.zenzore_raw.dataset_id
-  table_id   = var.bigquery_table_id
+  dataset_id          = google_bigquery_dataset.zenzore_raw.dataset_id
+  table_id            = var.bigquery_table_id
   deletion_protection = false
-  depends_on = [google_bigquery_dataset.zenzore_raw]
+  depends_on          = [google_bigquery_dataset.zenzore_raw]
 
   schema = jsonencode([
     {
@@ -152,15 +163,15 @@ resource "google_bigquery_table" "events" {
       ]
     }
   ])
-  
+
 }
 
 # Cloud Storage bucket for dead letter messages
 resource "google_storage_bucket" "storage_bucket_name" {
-  name                        = var.storage_bucket_name
-  location                    = var.region
-  force_destroy               = true
-  public_access_prevention    = "enforced"
+  name                     = var.storage_bucket_name
+  location                 = var.region
+  force_destroy            = true
+  public_access_prevention = "enforced"
 
   depends_on = [google_project_service.storage]
 }
@@ -185,7 +196,7 @@ resource "google_pubsub_subscription" "zenzore_ingest_bq_sub" {
   topic = google_pubsub_topic.zenzore_ingest.name
 
   bigquery_config {
-    table = "${var.project_id}.${var.bigquery_dataset_id}.${var.bigquery_table_id}"
+    table            = "${var.project_id}.${var.bigquery_dataset_id}.${var.bigquery_table_id}"
     use_table_schema = true
   }
 
@@ -197,7 +208,7 @@ resource "google_pubsub_subscription" "zenzore_ingest_bq_sub" {
   depends_on = [
     google_project_service.pubsub,
     google_bigquery_table.events,
-  google_bigquery_dataset_iam_member.pubsub_bq_editor
+    google_bigquery_dataset_iam_member.pubsub_bq_editor
   ]
 }
 
@@ -209,10 +220,10 @@ resource "google_pubsub_subscription" "zenzore_deadletter_gcs_sub" {
 
   cloud_storage_config {
     bucket = google_storage_bucket.storage_bucket_name.name
-    
+
     filename_prefix = "deadletter-"
     filename_suffix = ".json"
-    
+
     max_bytes    = 1000000
     max_duration = "300s"
   }
