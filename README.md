@@ -1,10 +1,10 @@
 # Zenzore
-> Version 1.1.0
+> Version 1.2.0
 
 This project will create mock sensor data and integrate with a GCP Pub/Sub Topic.
 
 
-Zenzore is a CLI which mocks devices containing sensors and passes sampled data out in a bulk message.  The app will be pseudo-simulated meaning that there will be some mathematical constructs which bind devices, sensors, and samples; however, the app will not be a strict physical simulation.  The focus is on the transfer of information to create the basis of a data pipeline.
+Zenzore is a CLI which mocks devices containing sensors and passes sampled data out in a bulk message.  The app will be pseudo-simulated meaning that there will be some mathematical constructs which bind devices, sensors, and samples; however, the app will not be a strict physical simulation.  The app also contains infrastructure setup for the flow of information that would assist in the running of a mechanical system as well as the business data surrounding it.  The focus is on the transfer of information to create the basis of a data pipeline.
 
 ## Generic Architecture
 
@@ -18,6 +18,11 @@ Zenzore is a CLI which mocks devices containing sensors and passes sampled data 
 1. A BigQuery subscription writing messages directly to a raw events table using the table schema
 1. A dead-letter topic and Cloud Storage sink for capturing failed messages
 1. All infrastructure managed via Terraform in the `infra/` directory
+
+
+**GCP Database Pipelines**
+1. A Cloud SQL instance which contains the transactional data which would be used to identify and track parts
+1. A BigQuery schema which acts as a landing place for incoming events that is combined with dimensional data for analysis
 
 ## Setup Data Pipeline
 
@@ -53,6 +58,10 @@ make tf-destroy
 - zenzore
     - run (starts a zenzore server that allows for updates)
     - nav (allows for easy menu-like navigation of an existing server, purely for exploring)
+    - registry (allows for cli create commands of zyztem parts, all add with random attributes for now)
+        - zyztem
+        - device
+        - sensor
     - diagnostics (gets running state of zyztems with basic stats)
 
 ## Top Level Folder Structure
@@ -62,11 +71,13 @@ make tf-destroy
     - cmd
         - run
         - nav
+        - registry
         - diagnostics (NOT IMPLEMENTED YET)
     - internal
         - zyztem
         - navigator
         - message
+        - registry
         - server
         - appdata (deprecated, but likely to be replaced by db persistence)
     - infra
@@ -89,7 +100,14 @@ Zenzore reads its configuration from environment variables rather than a config 
 | `ZENZOREPROJECTID` | Yes | The GCP project ID the Pub/Sub topic belongs to. |
 | `ZENZORETOPICID` | Yes | The Pub/Sub topic name messages are published to. |
 
+
 Both are required only when triggering a send (e.g. hitting `/zyztems/send`); they are not needed to run `nav` or `diagnostics` against an already-running server.
+
+### GCP Cloud SQL (`registry` package, used by `/cmd/registry`)
+| Variable | Required | Description |
+|---|---|---|
+| `ZENZOREDBINSTANCE` | Yes | The Cloud SQL instance name for transactional data (currently hardcoded to zenzore-registry). |
+
 
 ### Connecting to a running server (`zenzore nav`)
 
@@ -101,7 +119,7 @@ zenzore nav --server http://localhost:8080
 
 ## Known Limitations
 
-**Concurrency is only partially handled.** The server's in-memory registry (the map tracking all zyztems) is protected by a mutex, so concurrent requests against *different* zyztems, or concurrent create/list/remove calls, are safe. However, once a specific `Zyztem` is retrieved from the registry, mutations to its own state (adding a device, adding a sensor, sampling) are **not yet locked at that level**. Two concurrent requests targeting the *same* zyztem (for example, two simultaneous calls to add a device to the same zyztem) can race.
+**Concurrency is only partially handled.** The server's in-memory registry (the map tracking all zyztems, not to be confused with the registry package) is protected by a mutex, so concurrent requests against *different* zyztems, or concurrent create/list/remove calls, are safe. However, once a specific `Zyztem` is retrieved from the registry, mutations to its own state (adding a device, adding a sensor, sampling) are **not yet locked at that level**. Two concurrent requests targeting the *same* zyztem (for example, two simultaneous calls to add a device to the same zyztem) can race.
 
 In practice, this means Zenzore is currently safe for:
 - Multiple zyztems being created, listed, or removed concurrently

@@ -45,6 +45,6 @@ db-start:
 db-stop:
 	gcloud sql instances patch zenzore-registry --activation-policy=NEVER
 db-migrate:
-	PGPASSWORD=$(CLOUDSQL_PASSWORD) gcloud sql connect zenzore-registry \
-		--user=postgres \
+	PGPASSWORD=$(TF_VAR_cloudsql_password) gcloud sql connect zenzore-registry \
+		--user=registry_admin \
 		--database=zenzore_registry < migrations/create_registry_tables.sql
