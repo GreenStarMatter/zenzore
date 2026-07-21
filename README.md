@@ -1,5 +1,5 @@
 # Zenzore
-> Version 1.2.0
+> Version 1.3.0
 
 This project will create mock sensor data and integrate with a GCP Pub/Sub Topic.
 
@@ -22,6 +22,7 @@ Zenzore is a CLI which mocks devices containing sensors and passes sampled data 
 
 **GCP Database Pipelines**
 1. A Cloud SQL instance which contains the transactional data which would be used to identify and track parts
+1. A CloudStream instance which performs CDC on the Cloud SQL instance and transfers these tables into BigQuery on change
 1. A BigQuery schema which acts as a landing place for incoming events that is combined with dimensional data for analysis
 
 ## Setup Data Pipeline
@@ -46,6 +47,18 @@ make tf-setup
 It is recommended to verify that the Cloud SQL db is only active when in use.  This is an active service that can get expensive very quickly.
 ```bash
 make db-setup
+```
+
+Once the infrastructure is set, this will initialize the postgres transactional tables in Cloud SQL
+This is a bit of a strange intersection of responsibilities and the code reflects it.  At this time you will need to enter in the registry password, the admin password, then the registry again.
+This is under heavy consideration for a work around.
+```bash
+make db-migrate
+```
+
+This sets up cdc with DataStream to replicate the Cloud SQL tables to BigQuery
+```bash
+make tf-apply-after-migration
 ```
 
 To tear down all managed infrastructure:

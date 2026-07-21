@@ -45,3 +45,15 @@ variable "cloudsql_password" {
   type      = string
   sensitive = true
 }
+
+variable "enable_datastream_stream" {
+  description = "Whether to create the Datastream CDC stream."
+  type        = bool
+  default     = false
+}
+
+variable "postgres_password" {
+  description = "Password for the Cloud SQL postgres admin user"
+  type        = string
+  sensitive   = true
+}

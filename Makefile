@@ -38,6 +38,9 @@ tf-plan:
 tf-apply:
 	cd infra && terraform apply
 
+tf-apply-after-migration:
+	cd infra && terraform apply var="enable_datastream_stream=true"
+
 tf-destroy:
 	cd infra && terraform destroy
 db-start:
@@ -48,3 +51,12 @@ db-migrate:
 	PGPASSWORD=$(TF_VAR_cloudsql_password) gcloud sql connect zenzore-registry \
 		--user=registry_admin \
 		--database=zenzore_registry < migrations/create_registry_tables.sql
+
+
+	PGPASSWORD=$(TF_VAR_cloudsql_password) gcloud sql connect zenzore-registry \
+		--user=postgres \
+		--database=zenzore_registry < migrations/elevate_registry_admin.sql
+
+	PGPASSWORD=$(TF_VAR_cloudsql_password) gcloud sql connect zenzore-registry \
+		--user=registry_admin \
+		--database=zenzore_registry < migrations/set_registry_datastream.sql

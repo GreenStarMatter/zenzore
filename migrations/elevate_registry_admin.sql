@@ -1,0 +1,1 @@
+ALTER USER registry_admin WITH REPLICATION;

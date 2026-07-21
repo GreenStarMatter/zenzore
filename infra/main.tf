@@ -2,6 +2,25 @@ data "google_project" "project" {}
 
 # Enable required APIs
 
+resource "google_sql_user" "postgres" {
+  name     = "postgres"
+  instance = google_sql_database_instance.zenzore_registry.name
+  password = var.postgres_password
+}
+
+resource "google_project_service" "datastream" {
+  service            = "datastream.googleapis.com"
+  disable_on_destroy = false
+}
+
+data "google_datastream_static_ips" "datastream_ips" {
+  location = var.region
+
+  depends_on = [
+    google_project_service.datastream
+  ]
+}
+
 resource "google_project_service" "sqladmin" {
   service            = "sqladmin.googleapis.com"
   disable_on_destroy = false
@@ -16,6 +35,23 @@ resource "google_sql_database_instance" "zenzore_registry" {
   settings {
     tier              = "db-f1-micro"
     activation_policy = "ALWAYS"
+
+    database_flags {
+      name  = "cloudsql.logical_decoding"
+      value = "on"
+    }
+
+    ip_configuration {
+      ipv4_enabled = true
+
+      dynamic "authorized_networks" {
+        for_each = data.google_datastream_static_ips.datastream_ips.static_ips
+        content {
+          name  = "datastream-${replace(authorized_networks.value, ".", "-")}"
+          value = "${authorized_networks.value}/32"
+        }
+      }
+    }
   }
 
   lifecycle {
@@ -23,6 +59,80 @@ resource "google_sql_database_instance" "zenzore_registry" {
   }
 
   depends_on = [google_project_service.sqladmin]
+}
+
+resource "google_datastream_connection_profile" "cloudsql_source" {
+  display_name         = "zenzore-registry-source"
+  location              = var.region
+  connection_profile_id = "zenzore-registry-source"
+
+  postgresql_profile {
+    hostname = google_sql_database_instance.zenzore_registry.public_ip_address
+    port     = 5432
+    username = google_sql_user.registry_admin.name
+    password = var.cloudsql_password
+    database = google_sql_database.zenzore_registry.name
+  }
+
+  depends_on = [
+    google_project_service.datastream,
+    google_sql_database_instance.zenzore_registry,
+  ]
+}
+
+resource "google_datastream_connection_profile" "bigquery_dest" {
+  display_name         = "zenzore-registry-dest"
+  location              = var.region
+  connection_profile_id = "zenzore-registry-dest"
+
+  bigquery_profile {}
+
+  depends_on = [google_project_service.datastream]
+}
+
+resource "google_datastream_stream" "zenzore_registry_cdc" {
+  count = var.enable_datastream_stream ? 1 : 0
+  display_name = "zenzore-registry-cdc"
+  location      = var.region
+  stream_id     = "zenzore-registry-cdc"
+  desired_state = "RUNNING"
+
+  source_config {
+    source_connection_profile = google_datastream_connection_profile.cloudsql_source.id
+
+    postgresql_source_config {
+      publication      = "datastream_publication"
+      replication_slot = "datastream_slot"
+
+      include_objects {
+        postgresql_schemas {
+          schema = "public"
+          postgresql_tables { table = "dim_zyztem" }
+          postgresql_tables { table = "dim_device" }
+          postgresql_tables { table = "dim_sensor" }
+        }
+      }
+    }
+  }
+
+  destination_config {
+    destination_connection_profile = google_datastream_connection_profile.bigquery_dest.id
+
+    bigquery_destination_config {
+      source_hierarchy_datasets {
+        dataset_template {
+          location = var.region
+        }
+      }
+    }
+  }
+
+  backfill_all {}
+
+  depends_on = [
+    google_datastream_connection_profile.cloudsql_source,
+    google_datastream_connection_profile.bigquery_dest,
+  ]
 }
 
 resource "google_sql_database" "zenzore_registry" {
